@@ -5,13 +5,23 @@ Finds all .mobi files in ~/Downloads and converts them to .cbz files
 from pathlib import Path
 import subprocess, zipfile, re
 
+import epub
 
 downloads_dir = Path('~/Downloads').expanduser()
 
-def get_mobi_files():
-  yield from downloads_dir.glob('*.mobi')
+def get_ebook_files():
+  for f in downloads_dir.iterdir():
+    if re.match(r'.*\.(mobi|kepub\.epub)$', f.name):
+      yield f
 
-def get_images(mobi_file: Path):
+def get_images(ebook_file: Path):
+  match ebook_file.suffix:
+    case '.mobi':
+      yield from get_images_from_mobi(ebook_file)
+    case '.epub':
+      yield from epub.get_images(ebook_file)
+
+def get_images_from_mobi(mobi_file: Path):
   """
   Convert the given .mobi file to an .epub file and then extract the images from the .epub file
   """
@@ -20,20 +30,19 @@ def get_images(mobi_file: Path):
   cmd = ['ebook-convert', mobi_file, epub_file]
   subprocess.run(cmd)
 
-  with zipfile.ZipFile(epub_file) as zf:
-    for name in zf.namelist():
-      if m := re.match(r'images/(\d{2,}\.[a-z]{3,4})', name):
-        yield m.group(1), zf.read(name)
+  yield from epub.get_images(epub_file)
 
   # Delete temporary .epub file
   epub_file.unlink()
 
 def generate_cbz_file(cbz_file, images):
   with zipfile.ZipFile(cbz_file, 'w') as zf:
-    for name, data in images:
-      zf.writestr(name, data)
+    for i, data in enumerate(images, 1):
+      zf.writestr(f'{i:06}.jpg', data)
 
-for mobi_file in get_mobi_files():
-  print(mobi_file)
-  cbz_file = mobi_file.with_suffix('.cbz')
-  generate_cbz_file(cbz_file, get_images(mobi_file))
+
+
+for ebook_file in get_ebook_files():
+  print(ebook_file)
+  cbz_file = (ebook_file.parent / ebook_file.stem).with_suffix('.cbz')
+  generate_cbz_file(cbz_file, get_images(ebook_file))
