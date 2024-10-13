@@ -11,7 +11,7 @@ downloads_dir = Path('~/Downloads').expanduser()
 
 def get_ebook_files():
   for f in downloads_dir.iterdir():
-    if re.match(r'.*\.(mobi|kepub\.epub)$', f.name):
+    if re.match(r'.*\.(mobi|epub|kepub\.epub)$', f.name):
       yield f
 
 def get_images(ebook_file: Path):
