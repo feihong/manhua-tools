@@ -43,6 +43,9 @@ def generate_cbz_file(cbz_file, images):
 
 
 for ebook_file in get_ebook_files():
-  print(ebook_file)
-  cbz_file = (ebook_file.parent / ebook_file.stem).with_suffix('.cbz')
+  # Reformat the file name when converting to .cbz
+  m = re.match(r'^\[.*?\](.*)\.(?:epub|mobi|kepub\.epub)$', ebook_file.name)
+  new_filename = m.group(1) + '.cbz'
+  cbz_file = ebook_file.parent / new_filename
+  print(f'{ebook_file} -> {cbz_file}')
   generate_cbz_file(cbz_file, get_images(ebook_file))
